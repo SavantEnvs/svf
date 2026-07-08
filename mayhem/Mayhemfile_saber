@@ -1,0 +1,22 @@
+project: savantenvs/svf
+target: saber
+
+# File-input (CLI) target: feed the fuzz bytes as an LLVM IR/bitcode module to saber,
+# SVF's source-sink (leak/use-after-free/double-free) analyzer. The whole pipeline
+# (LLVM IR parse, SVFIR construction, Andersen points-to, SVFG, SABER checkers) runs
+# on the input. @@ is the input-file placeholder; parseIRFile sniffs content (BC magic
+# or textual IR), so no extension is needed.
+#
+# Keep this cmd MINIMAL (plain `cmd` + `@@`, like the healthy fleet CLI targets —
+# chap/cproc/fcc/tiny-compiler). Extra keys broke behavior testing in practice:
+# an absolute filepath (/in.ll, /dev/shm/in.ll) or a cwd:/filepath: combination made
+# input staging fail under Mayhem's coverage executor → the target aborted on EVERY
+# test case (including valid seeds) → "Run Failed" with 0 edges (runs 101-106).
+#
+# saber is format-gated: random bytes abort() at the IR parser header check, so the
+# valid seeds below are what let Mayhem past the "at least one passing test case" gate.
+testsuite:
+  - https://$MAYHEM_DOMAIN/$MAYHEM_PROJECT/$MAYHEM_TARGET/testsuite.tar
+  - file://mayhem/saber/testsuite
+cmds:
+  - cmd: /mayhem/saber @@
